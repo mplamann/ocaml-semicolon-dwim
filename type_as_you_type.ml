@@ -87,21 +87,27 @@ let () =
       | Some (start, end_, _expr) ->
         (* message_s [%sexp (expr : Text.t)]; *)
         Background.don't_wait_for [%here] (fun () ->
-            match%bind
+            let%map type_ =
               merlin_type_region ~buffer:(Current_buffer.get ()) ~start ~end_
-            with
-            | "unit Deferred.t" ->
+            in
+            match String.chop_suffix type_ ~suffix:" Deferred.t" with
+            | None -> ()
+            | Some prefix ->
+              let point = Point.marker_at () in
+              let insert_before_markers =
+                Funcall.("insert-before-markers" <: string @-> return nil)
+              in
               Point.goto_char end_;
               (* TODO: This doesn't work if there's whitespace between point and ; *)
               Point.delete_forward_char_exn 1;
-              Point.insert " in";
-              (* TODO: This isn't right -- this code is async. The point might have advanced already. *)
-              let point = Point.marker_at () in
+              insert_before_markers " in";
               Point.goto_char start;
-              Point.insert "let%bind () = ";
+              Point.insert
+                (match prefix with
+                | "unit" -> "let%bind () = "
+                | _ -> "let%bind (_ : " ^ prefix ^ ") = ");
               Point.goto_char (point |> Marker.position |> Option.value_exn);
-              return ()
-            | _ -> return ()))
+              ()))
 ;;
 
 let () = provide ("type_as_you_type" |> Symbol.intern)
