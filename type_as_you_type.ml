@@ -26,12 +26,11 @@ let () =
        let point = Point.marker_at () in
        Current_buffer.save_excursion Sync (fun () ->
            if Point.search_backward_regexp regexp
-           then
-             if Point.looking_at (Regexp.of_pattern "foo;")
-             then (
-               Point.delete_forward_char_exn 3;
-               Point.insert "bar";
-               Marker.position point |> Option.iter ~f:Point.goto_char)))
+              && Point.looking_at (Regexp.of_pattern "foo;")
+           then (
+             Point.delete_forward_char_exn 3;
+             Point.insert "bar";
+             Marker.position point |> Option.iter ~f:Point.goto_char)))
 ;;
 
 let () = provide ("type_as_you_type" |> Symbol.intern)
