@@ -27,7 +27,7 @@ let previous_expr () =
     let expr_node = Tree_sitter.Node.get_prev_sibling node_at_point in
     let start = Tree_sitter.Node.start_byte expr_node in
     let end_ = Tree_sitter.Node.end_byte expr_node in
-    Some (start, end_, Current_buffer.contents ~start ~end_ ())
+    Some (start, end_)
   | _ -> None
 ;;
 
@@ -74,7 +74,7 @@ let () =
       Point.insert ";";
       match previous_expr () with
       | None -> ()
-      | Some (start, end_, _expr) ->
+      | Some (start, end_) ->
         Background.don't_wait_for [%here] (fun () ->
             let%map type_ =
               merlin_type_region ~buffer:(Current_buffer.get ()) ~start ~end_
