@@ -31,6 +31,8 @@ let previous_expr () =
   | _ -> None
 ;;
 
+let merlin_command = Funcall.("merlin-command" <: nullary @-> return string)
+
 let merlin_type_region ~buffer ~start ~end_ =
   let command, stdin =
     Current_buffer.set_temporarily Sync buffer ~f:(fun () ->
@@ -54,22 +56,11 @@ let merlin_type_region ~buffer ~start ~end_ =
           ]
         , Current_buffer.contents () |> Text.to_utf8_bytes ))
   in
-  (* message_s [%sexp { command : string list }]; *)
-  let%map result =
-    Process.run_exn
-      ~prog:"/home/mplamann/.opam/default/bin/ocamlmerlin"
-      ~args:command
-      ~stdin
-      ()
-  in
-  (* message result; *)
+  let%map result = Process.run_exn ~prog:(merlin_command ()) ~args:command ~stdin () in
   let read_from_string = Funcall.("read-from-string" <: string @-> return value) in
   let assoc = Funcall.("assoc" <: Symbol.t @-> value @-> return value) in
   let read = read_from_string result in
-  (* message_s [%sexp [%here], (read : Value.t)]; *)
   let read = Value.car_exn read in
-  (* let listp = Funcall.("listp" <: value @-> return bool) in *)
-  (* message_s [%sexp [%here], (read : Value.t), (listp read : bool)]; *)
   assoc (Symbol.intern "value") read |> Value.cdr_exn |> Value.to_utf8_bytes_exn
 ;;
 
@@ -81,11 +72,9 @@ let () =
     ~define_keys:[ keymap, ";" ]
     (fun () ->
       Point.insert ";";
-      (* message_s [%sexp [%here]]; *)
       match previous_expr () with
       | None -> ()
       | Some (start, end_, _expr) ->
-        (* message_s [%sexp (expr : Text.t)]; *)
         Background.don't_wait_for [%here] (fun () ->
             let%map type_ =
               merlin_type_region ~buffer:(Current_buffer.get ()) ~start ~end_
