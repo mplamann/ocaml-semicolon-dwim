@@ -1,8 +1,6 @@
 open! Core
 open! Async
-module Async_process = Process
 open! Import
-module Process = Async_process
 
 let minor_mode =
   Minor_mode.define_minor_mode
@@ -31,39 +29,6 @@ let previous_expr () =
   | _ -> None
 ;;
 
-let merlin_command = Funcall.("merlin-command" <: nullary @-> return string)
-
-let merlin_type_region ~buffer ~start ~end_ =
-  let command, stdin =
-    Current_buffer.set_temporarily Sync buffer ~f:(fun () ->
-        ( [ "server"
-          ; "type-expression"
-          ; "-protocol"
-          ; "sexp"
-          ; "-log-file"
-          ; "-"
-          ; "-filename"
-          ; Current_buffer.file_name_exn ()
-          ; "-position"
-          ; (let line, col =
-               Current_buffer.save_excursion Sync (fun () ->
-                   Point.goto_char end_;
-                   Point.line_number (), Point.column_number ())
-             in
-             sprintf "%d:%d" line col)
-          ; "-expression"
-          ; Current_buffer.contents ~start ~end_ () |> Text.to_utf8_bytes
-          ]
-        , Current_buffer.contents () |> Text.to_utf8_bytes ))
-  in
-  let%map result = Process.run_exn ~prog:(merlin_command ()) ~args:command ~stdin () in
-  let read_from_string = Funcall.("read-from-string" <: string @-> return value) in
-  let assoc = Funcall.("assoc" <: Symbol.t @-> value @-> return value) in
-  let read = read_from_string result in
-  let read = Value.car_exn read in
-  assoc (Symbol.intern "value") read |> Value.cdr_exn |> Value.to_utf8_bytes_exn
-;;
-
 let () =
   defun_nullary_nil
     ("type-as-you-type-semicolon" |> Symbol.intern)
@@ -76,27 +41,29 @@ let () =
       | None -> ()
       | Some (start, end_) ->
         Background.don't_wait_for [%here] (fun () ->
-            let%map type_ =
-              merlin_type_region ~buffer:(Current_buffer.get ()) ~start ~end_
-            in
-            match String.chop_suffix type_ ~suffix:" Deferred.t" with
-            | None -> ()
-            | Some prefix ->
-              let point = Point.marker_at () in
-              let insert_before_markers =
-                Funcall.("insert-before-markers" <: string @-> return nil)
-              in
-              Point.goto_char end_;
-              (* TODO: This doesn't work if there's whitespace between point and ; *)
-              Point.delete_forward_char_exn 1;
-              insert_before_markers " in";
-              Point.goto_char start;
-              Point.insert
-                (match prefix with
-                | "unit" -> "let%bind () = "
-                | _ -> "let%bind (_ : " ^ prefix ^ ") = ");
-              Point.goto_char (point |> Marker.position |> Option.value_exn);
-              ()))
+            let buffer = Current_buffer.get () in
+            let%map type_ = Merlin.type_region ~buffer ~start ~end_ in
+            Current_buffer.set_temporarily Sync buffer ~f:(fun () ->
+                match String.chop_suffix type_ ~suffix:" Deferred.t" with
+                | None -> ()
+                | Some prefix ->
+                  let point = Point.marker_at () in
+                  let insert_before_markers =
+                    Funcall.("insert-before-markers" <: string @-> return nil)
+                  in
+                  Point.goto_char end_;
+                  Point.delete_forward_char_exn
+                    (Position.diff
+                       (Marker.position point |> Option.value_exn)
+                       (Point.get ()));
+                  insert_before_markers " in";
+                  Point.goto_char start;
+                  Point.insert
+                    (match prefix with
+                    | "unit" -> "let%bind () = "
+                    | _ -> "let%bind (_ : " ^ prefix ^ ") = ");
+                  Point.goto_char (point |> Marker.position |> Option.value_exn);
+                  ())))
 ;;
 
 let () = provide ("type_as_you_type" |> Symbol.intern)
