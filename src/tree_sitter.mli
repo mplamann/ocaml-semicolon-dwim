@@ -4,6 +4,8 @@ open! Core
 open! Async
 open! Import
 
+val mode : Minor_mode.t
+
 module Node : sig
   module Type : sig
     type t =

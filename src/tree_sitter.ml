@@ -7,6 +7,13 @@ let () =
   Feature.require ("tree-sitter-langs" |> Symbol.intern)
 ;;
 
+let mode =
+  Minor_mode.
+    { function_name = Symbol.intern "tree-sitter-mode"
+    ; variable_name = Symbol.intern "tree-sitter-mode"
+    }
+;;
+
 module Node = struct
   module Type = struct
     type t =

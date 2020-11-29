@@ -1,5 +1,5 @@
 (executable
- (name type_as_you_type)
- (libraries core_kernel ecaml)
+ (name ecaml_plugin)
+ (libraries async core ecaml type_as_you_type_lib)
  (preprocess (pps ppx_jane))
  (modes (native shared_object)))

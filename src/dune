@@ -1,0 +1,4 @@
+(library
+ (name type_as_you_type_lib)
+ (libraries async core ecaml)
+ (preprocess (pps ppx_jane)))
