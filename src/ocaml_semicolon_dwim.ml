@@ -4,7 +4,7 @@ open! Import
 
 let minor_mode =
   Minor_mode.define_minor_mode
-    ("type-as-you-type-mode" |> Symbol.intern)
+    ("ocaml-semicolon-dwim-mode" |> Symbol.intern)
     [%here]
     ~docstring:"Minor mode for automatically inserting let%bind as you type"
     ~mode_line:"tt"
@@ -60,7 +60,7 @@ let semicolon_dwim () =
 
 let () =
   defun_nullary_nil
-    ("type-as-you-type-semicolon" |> Symbol.intern)
+    ("ocaml-semicolon-dwim--semicolon" |> Symbol.intern)
     [%here]
     ~interactive:No_arg
     ~define_keys:[ keymap, ";" ]

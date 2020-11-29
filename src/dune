@@ -1,4 +1,4 @@
 (library
- (name type_as_you_type_lib)
+ (name ocaml_semicolon_dwim_lib)
  (libraries async core ecaml)
  (preprocess (pps ppx_jane)))
