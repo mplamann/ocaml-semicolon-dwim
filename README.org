@@ -18,6 +18,11 @@
   This mode depends on [[https://github.com/ubolonton/emacs-tree-sitter][emacs-tree-sitter]] and [[https://github.com/ocaml/merlin][merlin]], so make sure those are set
   up first.
 
+  Until https://github.com/ubolonton/emacs-tree-sitter/pull/75 is merged, you
+  will need to add a config statement like:
+  : (push '(tuareg-mode . ocaml) tree-sitter-languages)
+  to make tree-sitter-mode recognize tuareg-mode as a mode for editing ocaml.
+
   This also requires emacs 25 or later, built with dynamic module support.
 
   Install the ocaml dependencies with ~opam install ecaml~, then build the ecaml
