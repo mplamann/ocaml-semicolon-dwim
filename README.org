@@ -1,0 +1,28 @@
+#+TITLE: ocaml-semicolon-dwim
+
+  When you want to perform two synchronous computations in sequence, you can write
+  : first_computation ();
+  : second_computation ()
+
+  But when these computations return a ~Deferred.t~, there is extra boilerplate:
+  : let%bind () = first_computation () in
+  : second_computation ()
+
+  ~ocaml-semicolon-dwim~ allows you to type
+  : first_computation ();
+  : second_computation
+  in both cases. Once you type ~;~, it asks Merlin the type of
+  ~first_computation ()~ and inserts the ~let%bind () = ... in~ if necessary.
+* Setup
+
+  This mode depends on [[https://github.com/ubolonton/emacs-tree-sitter][emacs-tree-sitter]] and [[https://github.com/ocaml/merlin][merlin]], so make sure those are set
+  up first.
+
+  This also requires emacs 25 or later, built with dynamic module support.
+
+  Install the ocaml dependencies with ~opam install ecaml~, then build the ecaml
+  plugin with ~dune build~. Add the resulting .so file to emacs's load-path,
+  then add this to your emacs config:
+
+  : (require 'ecaml_plugin)
+  : (add-hook 'tuareg-mode-hook #'ocaml-semicolon-dwim-mode)
